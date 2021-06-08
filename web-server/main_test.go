@@ -1,17 +1,22 @@
-package main_test
+package main
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
+
+	"github.com/form3tech-oss/jwt-go"
 )
 
-var a main.App
+var a App
 
 func TestMain(m *testing.M) {
-	a = main.App{}
+	a = App{}
+	a.Initialize()
 
 	code := m.Run()
 
@@ -28,10 +33,19 @@ func TestLogin(t *testing.T) {
 }
 
 func TestApi_Unauthorized(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/foo", nil)
+	req, _ := http.NewRequest("GET", "/api/v1/foo", nil)
 	res := executeRequest(req)
 
 	checkResponseCode(t, http.StatusForbidden, res.Code)
+}
+
+func TestApi_Authorized(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/api/v1/foo", nil)
+	token, _ := createToken("john.doe")
+	req.Header.Set("Authorization", fmt.Sprintf("bearer %v", token))
+	res := executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, res.Code)
 }
 
 func executeRequest(req *http.Request) *httptest.ResponseRecorder {
@@ -45,4 +59,20 @@ func checkResponseCode(t *testing.T, expected, actual int) {
 	if expected != actual {
 		t.Errorf("Expected response code %d. Got %d\n", expected, actual)
 	}
+}
+
+func createToken(userId string) (string, error) {
+	var err error
+	//Creating Access Token
+	atClaims := jwt.MapClaims{}
+	atClaims["authorized"] = true
+	atClaims["user"] = userId
+	atClaims["exp"] = time.Now().Add(time.Minute * 15).Unix()
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
+	secret := "My Secret"
+	token, err := at.SignedString([]byte(secret))
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }

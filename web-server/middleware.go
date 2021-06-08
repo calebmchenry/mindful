@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/form3tech-oss/jwt-go"
 )
@@ -24,14 +26,21 @@ type Claims struct {
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// TODO(mchenryc): get secret from env variable
-		secret := "My Secret"
-		tokenString := r.Header.Get("Authorization")
+		tokenString := extractToken(r)
+
+		// Verify Token
 		claims := Claims{}
 		_, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			// TODO(mchenryc): get secret from env variable
+			secret := "My Secret"
 			return []byte(secret), nil
 		})
+
 		if err == nil {
+			// Forward user with request
 			r.WithContext(context.WithValue(r.Context(), "user", claims.User))
 			next.ServeHTTP(w, r)
 		} else {
@@ -39,4 +48,13 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 		}
 	})
+}
+
+func extractToken(r *http.Request) string {
+	bearToken := r.Header.Get("Authorization")
+	strArr := strings.Split(bearToken, " ")
+	if len(strArr) == 2 {
+		return strArr[1]
+	}
+	return ""
 }
