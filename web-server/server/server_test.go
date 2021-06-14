@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"bytes"
@@ -12,11 +12,10 @@ import (
 	"github.com/form3tech-oss/jwt-go"
 )
 
-var a App
+var s Server
 
 func TestMain(m *testing.M) {
-	a = App{}
-	a.Initialize()
+	s = New()
 
 	code := m.Run()
 
@@ -50,7 +49,7 @@ func TestApi_Authorized(t *testing.T) {
 
 func executeRequest(req *http.Request) *httptest.ResponseRecorder {
 	rr := httptest.NewRecorder()
-	a.Router.ServeHTTP(rr, req)
+	s.Router.ServeHTTP(rr, req)
 
 	return rr
 }

@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"net/http"
@@ -7,11 +7,12 @@ import (
 	"github.com/urfave/negroni"
 )
 
-type App struct {
+type Server struct {
 	Router *mux.Router
 }
 
-func (a *App) Initialize() {
+func New() Server {
+	s := Server{}
 	r := mux.NewRouter()
 
 	// Middleware
@@ -28,10 +29,11 @@ func (a *App) Initialize() {
 	api.Use(AuthMiddleware)
 	api.Path("/foo").Handler(http.HandlerFunc(foo)).Methods(http.MethodGet, http.MethodOptions)
 
-	a.Router = r
+	s.Router = r
+	return s
 }
 
-func (a *App) Serve() {
+func (a *Server) Serve() {
 	http.ListenAndServe(":8080", a.Router)
 }
 

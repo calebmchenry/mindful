@@ -1,7 +1,8 @@
 package main
 
+import "github.com/calebmchenry/mindful/web-server/server"
+
 func main() {
-	a := App{}
-	a.Initialize()
-	a.Serve()
+	s := server.New()
+	s.Serve()
 }
