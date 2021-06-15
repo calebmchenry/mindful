@@ -16,9 +16,7 @@ var s Server
 
 func TestMain(m *testing.M) {
 	s = New()
-
 	code := m.Run()
-
 	os.Exit(code)
 }
 
@@ -62,13 +60,12 @@ func checkResponseCode(t *testing.T, expected, actual int) {
 
 func createToken(userId string) (string, error) {
 	var err error
-	//Creating Access Token
 	atClaims := jwt.MapClaims{}
 	atClaims["authorized"] = true
 	atClaims["user"] = userId
 	atClaims["exp"] = time.Now().Add(time.Minute * 15).Unix()
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
-	secret := "My Secret"
+	secret := getAuthSecret()
 	token, err := at.SignedString([]byte(secret))
 	if err != nil {
 		return "", err
